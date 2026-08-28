@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "claude-bridge"
+version = "0.1.0"
+description = "MCP server that bridges clients to the Claude Code CLI."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [
+  { name = "Claude Bridge contributors" }
+]
+dependencies = [
+  "mcp>=1.9.0"
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.0.0"
+]
+
+[project.scripts]
+claude-bridge = "claude_bridge.cli:main"
+claude-bridge-mcp = "claude_bridge.server:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
