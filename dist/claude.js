@@ -14,6 +14,20 @@ export class ClaudeCodeClient {
     async resume(sessionId, prompt) {
         return this.run(["-p", prompt, "--resume", sessionId, "--output-format", "json"]);
     }
+    async resumeOrContinueWithHistory(sessionId, prompt, messages) {
+        try {
+            return await this.resume(sessionId, prompt);
+        }
+        catch (error) {
+            if (!this.isMissingConversationError(error)) {
+                throw error;
+            }
+            return this.continueWithHistory(messages);
+        }
+    }
+    async continueWithHistory(messages) {
+        return this.run(["-p", this.formatHistoryPrompt(messages), "--output-format", "json"]);
+    }
     async run(args) {
         const fullArgs = [...args];
         if (this.model) {
@@ -95,5 +109,23 @@ export class ClaudeCodeClient {
         catch {
             return undefined;
         }
+    }
+    isMissingConversationError(error) {
+        return error instanceof Error && /No conversation found with session ID/i.test(error.message);
+    }
+    formatHistoryPrompt(messages) {
+        const transcript = messages
+            .map((message) => {
+            const speaker = message.role === "user" ? "Codex" : "Claude";
+            return `${speaker}:\n${message.content}`;
+        })
+            .join("\n\n");
+        return [
+            "Continue the following conversation between Codex and Claude.",
+            "Answer the final Codex message as Claude, using the earlier messages as context.",
+            "Do not mention that the transcript was replayed unless it is directly relevant.",
+            "",
+            transcript
+        ].join("\n");
     }
 }
