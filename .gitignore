@@ -1,4 +1,5 @@
 node_modules/
+.deploy/
 data/sessions.json
 data/*.tmp
 bin/claude.exe
