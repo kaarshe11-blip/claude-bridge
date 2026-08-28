@@ -15,7 +15,11 @@ No repository indexing, Git integration, file scanning, code review workflow, or
 
 This server uses the supported Claude Code CLI in print mode. Authentication is handled by Claude Code, so a Claude Pro/Max login can be used without an Anthropic API key.
 
-`claude_start` runs Claude Code with `-p` and `--output-format json`, stores a session ID, and returns the response. `claude_continue` uses the MCP's local JSON history and replays the conversation transcript to Claude Code, so context persists even when Claude Code print-mode sessions are not resumable with `--resume`.
+`claude_start` runs Claude Code with `-p` and `--output-format json`, stores the session ID Claude Code returns, and returns the response. `claude_continue` resumes that same session with `-p --resume <session_id> --output-format json`, so each turn is appended to Claude Code's own on-disk conversation transcript rather than a synthetic replay. This means a conversation started through the bridge shows up as a normal, continuable session in Claude Code itself (e.g. `claude --resume`), not just in the bridge's local session store.
+
+Resuming a session depends on Claude Code's own session storage, which is keyed by the working directory the CLI was run from. `claude_start` and every later `claude_continue` for that session must run from the same directory for `--resume` to find it. This holds within one bridge process's lifetime, but also across a bridge restart: launch the bridge from a fixed, unchanging working directory rather than relying on whatever directory happened to be current.
+
+The bridge's local JSON store (`data/sessions.json`) still tracks session metadata and a copy of each message for `claude_sessions` listings and the `CLAUDE_MAX_MESSAGES_PER_SESSION` cap, but it is no longer what carries conversation context between turns. Consequently, `claude_end` only deletes that local session entry; it does not delete or affect Claude Code's own persisted session history, which remains resumable directly through Claude Code (e.g. `claude --resume`) after the bridge has forgotten it.
 
 ## Runtime Files
 
