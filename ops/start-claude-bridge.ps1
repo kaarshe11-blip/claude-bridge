@@ -26,6 +26,17 @@ if (-not $SmokeMode) {
   $SmokeMode = if ($env:CLAUDE_BRIDGE_STARTUP_SMOKE) { $env:CLAUDE_BRIDGE_STARTUP_SMOKE } else { "protocol" }
 }
 
+if (-not $env:CLAUDE_CODE_COMMAND) {
+  $localClaude = Join-Path $Root "bin\claude.exe"
+  if (Test-Path -LiteralPath $localClaude) {
+    $env:CLAUDE_CODE_COMMAND = $localClaude
+  }
+}
+
+if (-not $env:CLAUDE_SESSIONS_PATH) {
+  $env:CLAUDE_SESSIONS_PATH = Join-Path $Root "data\sessions.json"
+}
+
 function Write-LauncherLog {
   param([string]$Message)
   [Console]::Error.WriteLine("[claude-bridge-launcher] $Message")
@@ -285,6 +296,11 @@ try {
   Sync-MainSafely
   Write-LauncherLog "Synced GitHub main and promoted staged build."
 } catch {
+  if ($SyncOnly) {
+    Write-LauncherLog "Safe sync failed. $($_.Exception.Message)"
+    exit 1
+  }
+
   Write-LauncherLog "Safe sync skipped; starting existing local server. $($_.Exception.Message)"
 }
 
