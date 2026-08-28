@@ -62,14 +62,35 @@ node dist/server.js
 
 The server speaks MCP over stdio. Do not run it directly for interactive chat; configure it in Codex or use the included e2e test.
 
+## Safe Startup Sync
+
+The working Codex install can stay tied to GitHub `main` through the launcher in `ops/start-claude-bridge.ps1`.
+
+On startup, the launcher:
+
+- downloads `main` from GitHub into `.deploy/stage`
+- builds the staged copy with the local TypeScript compiler
+- starts a staged MCP server and verifies the four expected tools
+- promotes the staged copy only if build and smoke checks pass
+- preserves local runtime files: `bin/claude.exe`, `data/sessions.json`, `node_modules`, `.env`, and the root launcher
+- falls back to the existing local server if sync, build, or smoke fails
+
+For the current machine, copy `ops/start-claude-bridge.ps1` to the live folder root as:
+
+```text
+C:\Users\ma_ka\Documents\Codex\2026-08-27\files-pasted-by-the-user-build\outputs\claude-mcp\start-claude-bridge.ps1
+```
+
+Then configure Codex to start that launcher.
+
 ## Codex Config
 
-Add this to `C:\Users\ma_ka\.codex\config.toml`:
+Current launcher-based config in `C:\Users\ma_ka\.codex\config.toml`:
 
 ```toml
 [mcp_servers.claude_bridge]
-command = 'C:\Users\ma_ka\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe'
-args = ['C:\Users\ma_ka\Documents\Codex\2026-08-27\files-pasted-by-the-user-build\outputs\claude-mcp\dist\server.js']
+command = 'C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe'
+args = ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', 'C:\Users\ma_ka\Documents\Codex\2026-08-27\files-pasted-by-the-user-build\outputs\claude-mcp\start-claude-bridge.ps1']
 startup_timeout_sec = 120
 
 [mcp_servers.claude_bridge.env]
@@ -78,6 +99,8 @@ CLAUDE_TIMEOUT_SECONDS = '300'
 CLAUDE_MAX_MESSAGES_PER_SESSION = '30'
 CLAUDE_SESSIONS_PATH = 'C:\Users\ma_ka\Documents\Codex\2026-08-27\files-pasted-by-the-user-build\outputs\claude-mcp\data\sessions.json'
 ```
+
+Set `CLAUDE_BRIDGE_STARTUP_SMOKE=full` to make startup smoke-test `claude_start` and `claude_continue` too. The default `protocol` mode verifies MCP startup, tool listing, `claude_sessions`, and `claude_end` without spending Claude turns.
 
 If your `claude` executable is somewhere else, change `CLAUDE_CODE_COMMAND` to that full path.
 
@@ -88,3 +111,9 @@ pnpm run test:e2e
 ```
 
 The test starts the MCP server over stdio, calls `claude_start`, calls `claude_continue` twice using the same session, then closes the session.
+
+Manual launcher test:
+
+```powershell
+& "C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -ExecutionPolicy Bypass -File "C:\Users\ma_ka\Documents\Codex\2026-08-27\files-pasted-by-the-user-build\outputs\claude-mcp\start-claude-bridge.ps1" -SyncOnly -SmokeMode protocol
+```
