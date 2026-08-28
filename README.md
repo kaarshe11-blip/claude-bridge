@@ -1,80 +1,90 @@
-# Claude Bridge
+# Claude Conversation MCP
 
-Claude Bridge is a small MCP server that lets an MCP-compatible client call the
-Claude Code CLI from a tool.
+Minimal stdio MCP server that lets Codex hold persistent conversations with Claude.
 
-It exposes two tools:
+It exposes only:
 
-- `claude_start`: start a new non-interactive Claude Code run with a prompt.
-- `claude_continue`: continue the latest Claude Code conversation in the target
-  working directory.
+- `claude_start`
+- `claude_continue`
+- `claude_end`
+- `claude_sessions`
 
-The bridge shells out to the local `claude` executable, so the host running this
-server must already have Claude Code installed and authenticated.
+No repository indexing, Git integration, file scanning, code review workflow, or project-specific behavior is included.
 
-## Requirements
+## Backend
 
-- Python 3.10+
-- Claude Code CLI available on `PATH`
-- An MCP-compatible client
+This server uses the supported Claude Code CLI in print mode. Authentication is handled by Claude Code, so a Claude Pro/Max login can be used without an Anthropic API key.
 
-## Install
+`claude_start` runs Claude Code with `-p` and `--output-format json`, stores a session ID, and returns the response. `claude_continue` uses the MCP's local JSON history and replays the conversation transcript to Claude Code, so context persists even when Claude Code print-mode sessions are not resumable with `--resume`.
 
-```bash
-python -m venv .venv
-. .venv/bin/activate
-pip install -e .
+## Runtime Files
+
+The working local install uses these runtime paths:
+
+```text
+C:\Users\ma_ka\Documents\Codex\2026-08-27\files-pasted-by-the-user-build\outputs\claude-mcp\dist\server.js
+C:\Users\ma_ka\Documents\Codex\2026-08-27\files-pasted-by-the-user-build\outputs\claude-mcp\bin\claude.exe
+C:\Users\ma_ka\Documents\Codex\2026-08-27\files-pasted-by-the-user-build\outputs\claude-mcp\data\sessions.json
 ```
 
-On Windows PowerShell:
+`bin/claude.exe` and `data/sessions.json` are intentionally not committed. The executable is machine-local and too large for normal GitHub contents, and the session file contains live conversation transcripts.
+
+## Environment
+
+Required:
 
 ```powershell
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-pip install -e .
+& "C:\Users\ma_ka\Documents\Codex\2026-08-27\files-pasted-by-the-user-build\outputs\claude-mcp\bin\claude.exe" /login
 ```
 
-## MCP Configuration
+Optional:
 
-Add this server to your MCP client configuration:
-
-```json
-{
-  "mcpServers": {
-    "claude-bridge": {
-      "command": "claude-bridge-mcp"
-    }
-  }
-}
+```powershell
+$env:CLAUDE_CODE_COMMAND = "C:\Users\ma_ka\Documents\Codex\2026-08-27\files-pasted-by-the-user-build\outputs\claude-mcp\bin\claude.exe"
+$env:CLAUDE_CODE_MODEL = "sonnet"
+$env:CLAUDE_TIMEOUT_SECONDS = "300"
+$env:CLAUDE_MAX_MESSAGES_PER_SESSION = "30"
+$env:CLAUDE_SESSIONS_PATH = "C:\Users\ma_ka\Documents\Codex\2026-08-27\files-pasted-by-the-user-build\outputs\claude-mcp\data\sessions.json"
 ```
 
-## Configuration
+## Build
 
-Environment variables:
-
-| Name | Default | Description |
-| --- | --- | --- |
-| `CLAUDE_BRIDGE_BIN` | `claude` | Claude Code executable to run. |
-| `CLAUDE_BRIDGE_CWD` | current process directory | Default working directory for Claude runs. |
-| `CLAUDE_BRIDGE_TIMEOUT_SECONDS` | `900` | Maximum runtime per Claude request. |
-| `CLAUDE_BRIDGE_MAX_TURNS` | unset | Optional `--max-turns` value for print-mode runs. |
-| `CLAUDE_BRIDGE_PERMISSION_MODE` | unset | Optional Claude Code `--permission-mode` value. |
-
-## CLI Smoke Test
-
-```bash
-claude-bridge start "Summarize this repository."
-claude-bridge continue "Now list the main files."
+```powershell
+pnpm install
+pnpm run build
 ```
 
-## Development
+## Start
 
-```bash
-pip install -e ".[dev]"
-pytest
+```powershell
+node dist/server.js
 ```
 
-## Notes
+The server speaks MCP over stdio. Do not run it directly for interactive chat; configure it in Codex or use the included e2e test.
 
-Claude Bridge uses Claude Code print mode (`claude -p`) for non-interactive
-execution, and `claude -c -p` when continuing the latest conversation.
+## Codex Config
+
+Add this to `C:\Users\ma_ka\.codex\config.toml`:
+
+```toml
+[mcp_servers.claude_bridge]
+command = 'C:\Users\ma_ka\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe'
+args = ['C:\Users\ma_ka\Documents\Codex\2026-08-27\files-pasted-by-the-user-build\outputs\claude-mcp\dist\server.js']
+startup_timeout_sec = 120
+
+[mcp_servers.claude_bridge.env]
+CLAUDE_CODE_COMMAND = 'C:\Users\ma_ka\Documents\Codex\2026-08-27\files-pasted-by-the-user-build\outputs\claude-mcp\bin\claude.exe'
+CLAUDE_TIMEOUT_SECONDS = '300'
+CLAUDE_MAX_MESSAGES_PER_SESSION = '30'
+CLAUDE_SESSIONS_PATH = 'C:\Users\ma_ka\Documents\Codex\2026-08-27\files-pasted-by-the-user-build\outputs\claude-mcp\data\sessions.json'
+```
+
+If your `claude` executable is somewhere else, change `CLAUDE_CODE_COMMAND` to that full path.
+
+## Test
+
+```powershell
+pnpm run test:e2e
+```
+
+The test starts the MCP server over stdio, calls `claude_start`, calls `claude_continue` twice using the same session, then closes the session.

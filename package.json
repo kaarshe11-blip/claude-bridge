@@ -1,0 +1,22 @@
+{
+  "name": "claude-conversation-mcp",
+  "version": "0.1.0",
+  "description": "Minimal stdio MCP server that lets Codex hold persistent conversations with Claude.",
+  "type": "module",
+  "bin": {
+    "claude-conversation-mcp": "./dist/server.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/server.js",
+    "test:e2e": "node dist/e2e-test.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.26.0",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "typescript": "^5.9.3"
+  }
+}
