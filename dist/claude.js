@@ -14,9 +14,6 @@ export class ClaudeCodeClient {
     async resume(sessionId, prompt) {
         return this.run(["-p", prompt, "--resume", sessionId, "--output-format", "json"]);
     }
-    async continueWithHistory(messages) {
-        return this.run(["-p", this.formatHistoryPrompt(messages), "--output-format", "json"]);
-    }
     async run(args) {
         const fullArgs = [...args];
         if (this.model) {
@@ -98,20 +95,5 @@ export class ClaudeCodeClient {
         catch {
             return undefined;
         }
-    }
-    formatHistoryPrompt(messages) {
-        const transcript = messages
-            .map((message) => {
-            const speaker = message.role === "user" ? "Codex" : "Claude";
-            return `${speaker}:\n${message.content}`;
-        })
-            .join("\n\n");
-        return [
-            "Continue the following conversation between Codex and Claude.",
-            "Answer the final Codex message as Claude, using the earlier messages as context.",
-            "Do not mention that the transcript was replayed unless it is directly relevant.",
-            "",
-            transcript
-        ].join("\n");
     }
 }

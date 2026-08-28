@@ -61,7 +61,7 @@ server.registerTool("claude_continue", {
         return limitResult(session.session_id, session.messages.length);
     }
     const userMessage = { role: "user", content: prompt };
-    const claudeResponse = await claude.continueWithHistory([...session.messages, userMessage]);
+    const claudeResponse = await claude.resume(session.session_id, prompt);
     await store.append(session.session_id, userMessage);
     await store.append(session.session_id, { role: "assistant", content: claudeResponse.response });
     return jsonResult({

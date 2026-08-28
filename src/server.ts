@@ -77,7 +77,7 @@ server.registerTool(
     }
 
     const userMessage = { role: "user" as const, content: prompt };
-    const claudeResponse = await claude.continueWithHistory([...session.messages, userMessage]);
+    const claudeResponse = await claude.resume(session.session_id, prompt);
     await store.append(session.session_id, userMessage);
     await store.append(session.session_id, { role: "assistant", content: claudeResponse.response });
 
