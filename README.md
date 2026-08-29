@@ -13,12 +13,22 @@ No repository indexing, Git integration, file scanning, code review workflow, or
 
 ## Exchange Visibility
 
-Every successful `claude_start` and `claude_continue` response includes:
+Every successful `claude_start` and `claude_continue` response includes a chat-ready first text item:
+
+```text
+Sent to Claude:
+...
+
+Claude replied:
+...
+```
+
+The same response also includes a structured JSON payload with:
 
 - `prompt_sent`: the exact prompt text sent to Claude
 - `response`: the exact response text returned by Claude
 
-Codex callers should display those two fields immediately after each Claude communication tool call, using clear labels such as `Sent to Claude:` and `Claude replied:`. This makes every Claude exchange visible in the chat, including follow-up turns in the same session.
+Codex callers should still display the exchange immediately after each Claude communication tool call. The bridge now makes that harder to miss by returning the labeled transcript as primary text content, while preserving the JSON echo for tests and programmatic callers.
 
 ## Backend
 
