@@ -15,13 +15,36 @@ const store = new SessionStore(config.sessionsPath);
 const claude = new ClaudeCodeClient(config.claudeCodeCommand, config.claudeCodeModel, config.timeoutMs);
 
 function jsonResult(value: unknown) {
-  return {
+  const result: {
+    content: Array<{ type: "text"; text: string }>;
+    structuredContent?: Record<string, unknown>;
+  } = {
     content: [
       {
         type: "text" as const,
         text: JSON.stringify(value, null, 2)
       }
     ]
+  };
+  if (value && typeof value === "object" && !Array.isArray(value)) {
+    result.structuredContent = value as Record<string, unknown>;
+  }
+  return result;
+}
+
+function claudeExchangeResult(value: { session_id: string; prompt_sent: string; response: string }) {
+  return {
+    content: [
+      {
+        type: "text" as const,
+        text: `Sent to Claude:\n${value.prompt_sent}\n\nClaude replied:\n${value.response}`
+      },
+      {
+        type: "text" as const,
+        text: JSON.stringify(value, null, 2)
+      }
+    ],
+    structuredContent: value
   };
 }
 
@@ -49,7 +72,7 @@ server.registerTool(
       { role: "assistant", content: claudeResponse.response }
     ]);
 
-    return jsonResult({
+    return claudeExchangeResult({
       session_id: session.session_id,
       prompt_sent: prompt,
       response: claudeResponse.response
@@ -83,7 +106,7 @@ server.registerTool(
     await store.append(session.session_id, userMessage);
     await store.append(session.session_id, { role: "assistant", content: claudeResponse.response });
 
-    return jsonResult({
+    return claudeExchangeResult({
       session_id: session.session_id,
       prompt_sent: prompt,
       response: claudeResponse.response
