@@ -43,28 +43,53 @@ async function callTool(name: string, args: Record<string, unknown>) {
 await client.connect(transport);
 
 try {
+  const prompt1 =
+    "Which is better for a small internal service: a queue-based architecture or a synchronous API? Give a short answer.";
   const turn1 = await callTool("claude_start", {
-    prompt: "Which is better for a small internal service: a queue-based architecture or a synchronous API? Give a short answer."
+    prompt: prompt1
   });
 
   const sessionId = String(turn1.session_id);
+  if (turn1.prompt_sent !== prompt1) {
+    throw new Error("claude_start did not echo prompt_sent.");
+  }
+
   console.log("Turn 1 session:", sessionId);
+  console.log("Sent to Claude:");
+  console.log(String(turn1.prompt_sent));
+  console.log("Claude replied:");
   console.log(String(turn1.response));
   console.log("");
 
+  const prompt2 = "Now assume latency matters much more than reliability. Does your answer change?";
   const turn2 = await callTool("claude_continue", {
     session_id: sessionId,
-    prompt: "Now assume latency matters much more than reliability. Does your answer change?"
+    prompt: prompt2
   });
+  if (turn2.prompt_sent !== prompt2) {
+    throw new Error("claude_continue turn 2 did not echo prompt_sent.");
+  }
+
   console.log("Turn 2:");
+  console.log("Sent to Claude:");
+  console.log(String(turn2.prompt_sent));
+  console.log("Claude replied:");
   console.log(String(turn2.response));
   console.log("");
 
+  const prompt3 = "Summarize the tradeoff we have been discussing.";
   const turn3 = await callTool("claude_continue", {
     session_id: sessionId,
-    prompt: "Summarize the tradeoff we have been discussing."
+    prompt: prompt3
   });
+  if (turn3.prompt_sent !== prompt3) {
+    throw new Error("claude_continue turn 3 did not echo prompt_sent.");
+  }
+
   console.log("Turn 3:");
+  console.log("Sent to Claude:");
+  console.log(String(turn3.prompt_sent));
+  console.log("Claude replied:");
   console.log(String(turn3.response));
   console.log("");
 
