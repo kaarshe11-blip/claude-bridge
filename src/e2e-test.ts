@@ -19,9 +19,14 @@ const client = new Client({
 
 function parseToolText(result: unknown): Record<string, unknown> {
   const content = (result as { content?: Array<{ type: string; text?: string }> }).content;
-  const text = content?.find((item) => item.type === "text")?.text;
+  let text: string | undefined;
+  for (const item of content ?? []) {
+    if (item.type === "text" && item.text?.trim().startsWith("{")) {
+      text = item.text;
+    }
+  }
   if (!text) {
-    throw new Error("Tool result did not include text content.");
+    throw new Error("Tool result did not include JSON text content.");
   }
 
   try {
@@ -31,12 +36,23 @@ function parseToolText(result: unknown): Record<string, unknown> {
   }
 }
 
+function assertVisibleExchange(result: unknown, prompt: string) {
+  const content = (result as { content?: Array<{ type: string; text?: string }> }).content;
+  const visible = content?.find((item) => item.type === "text")?.text ?? "";
+  if (!visible.includes("Sent to Claude:\n") || !visible.includes(prompt) || !visible.includes("\n\nClaude replied:\n")) {
+    throw new Error("Tool result did not include the visible Claude exchange transcript.");
+  }
+}
+
 async function callTool(name: string, args: Record<string, unknown>) {
   const result = await client.callTool(
     { name, arguments: args },
     undefined,
     { timeout: 300_000, maxTotalTimeout: 300_000 }
   );
+  if (typeof args.prompt === "string") {
+    assertVisibleExchange(result, args.prompt);
+  }
   return parseToolText(result);
 }
 
