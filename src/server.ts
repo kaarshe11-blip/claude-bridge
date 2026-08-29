@@ -51,6 +51,7 @@ server.registerTool(
 
     return jsonResult({
       session_id: session.session_id,
+      prompt_sent: prompt,
       response: claudeResponse.response
     });
   }
@@ -84,6 +85,7 @@ server.registerTool(
 
     return jsonResult({
       session_id: session.session_id,
+      prompt_sent: prompt,
       response: claudeResponse.response
     });
   }
