@@ -42,6 +42,7 @@ server.registerTool("claude_start", {
     ]);
     return jsonResult({
         session_id: session.session_id,
+        prompt_sent: prompt,
         response: claudeResponse.response
     });
 });
@@ -67,6 +68,7 @@ server.registerTool("claude_continue", {
     await store.append(session.session_id, { role: "assistant", content: claudeResponse.response });
     return jsonResult({
         session_id: session.session_id,
+        prompt_sent: prompt,
         response: claudeResponse.response
     });
 });
