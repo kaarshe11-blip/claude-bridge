@@ -30,6 +30,8 @@ The same response also includes a structured JSON payload with:
 
 Codex callers should still display the exchange immediately after each Claude communication tool call. The bridge now makes that harder to miss by returning the labeled transcript as primary text content, while preserving the JSON echo for tests and programmatic callers.
 
+An MCP server cannot inject text into the main Codex chat by itself. If the Codex client records MCP tool output only as a tool event, the caller must relay the prompt and response in an assistant-visible message. After upgrading the bridge, restart or reload the Codex MCP client so any long-lived stdio process is replaced by the patched `dist/server.js`.
+
 ## Backend
 
 This server uses the supported Claude Code CLI in print mode. Authentication is handled by Claude Code, so a Claude Pro/Max login can be used without an Anthropic API key.
