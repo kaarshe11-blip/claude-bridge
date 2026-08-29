@@ -12,13 +12,32 @@ const server = new McpServer({
 const store = new SessionStore(config.sessionsPath);
 const claude = new ClaudeCodeClient(config.claudeCodeCommand, config.claudeCodeModel, config.timeoutMs);
 function jsonResult(value) {
-    return {
+    const result = {
         content: [
             {
                 type: "text",
                 text: JSON.stringify(value, null, 2)
             }
         ]
+    };
+    if (value && typeof value === "object" && !Array.isArray(value)) {
+        result.structuredContent = value;
+    }
+    return result;
+}
+function claudeExchangeResult(value) {
+    return {
+        content: [
+            {
+                type: "text",
+                text: `Sent to Claude:\n${value.prompt_sent}\n\nClaude replied:\n${value.response}`
+            },
+            {
+                type: "text",
+                text: JSON.stringify(value, null, 2)
+            }
+        ],
+        structuredContent: value
     };
 }
 function limitResult(sessionId, messageCount) {
@@ -40,7 +59,7 @@ server.registerTool("claude_start", {
         { role: "user", content: prompt },
         { role: "assistant", content: claudeResponse.response }
     ]);
-    return jsonResult({
+    return claudeExchangeResult({
         session_id: session.session_id,
         prompt_sent: prompt,
         response: claudeResponse.response
@@ -66,7 +85,7 @@ server.registerTool("claude_continue", {
     const claudeResponse = await claude.resumeOrContinueWithHistory(session.session_id, prompt, messages);
     await store.append(session.session_id, userMessage);
     await store.append(session.session_id, { role: "assistant", content: claudeResponse.response });
-    return jsonResult({
+    return claudeExchangeResult({
         session_id: session.session_id,
         prompt_sent: prompt,
         response: claudeResponse.response
