@@ -11,6 +11,15 @@ It exposes only:
 
 No repository indexing, Git integration, file scanning, code review workflow, or project-specific behavior is included.
 
+## Exchange Visibility
+
+Every successful `claude_start` and `claude_continue` response includes:
+
+- `prompt_sent`: the exact prompt text sent to Claude
+- `response`: the exact response text returned by Claude
+
+Codex callers should display those two fields immediately after each Claude communication tool call, using clear labels such as `Sent to Claude:` and `Claude replied:`. This makes every Claude exchange visible in the chat, including follow-up turns in the same session.
+
 ## Backend
 
 This server uses the supported Claude Code CLI in print mode. Authentication is handled by Claude Code, so a Claude Pro/Max login can be used without an Anthropic API key.
